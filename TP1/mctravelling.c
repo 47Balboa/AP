@@ -160,7 +160,12 @@ int main(int argc, char const *argv[])
 	float cost, tspCost;
 
 	srand((unsigned) time(NULL));
-
+	
+	if ( argc != 4 ){
+           printf ("Usage : ./ tsp <nr cidades> <nr de processos ><nr de iteracoes>\n");
+	   return 0;
+	}
+	
 	cities = atoi(argv[1]);
 	int num_proc = atoi(argv[2]);
 	int iter = atoi(argv[3]);
