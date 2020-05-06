@@ -21,6 +21,7 @@ void initialize_matrices(){
    
     //inicializar a matriz u a zero
     for(i=0;i<N;i++){
+        u[i] = (float*) malloc(sizeof(float) * N);
         for(j=0;j<N;j++){
             u[i][j]=0;
             printf("%f",u[i][j]);
@@ -28,7 +29,7 @@ void initialize_matrices(){
         
     }
      
-    // Preencher a matriz com 100 nos limites superior e laterais e 50 nos interiores
+    // Preencher a matriz com 100 nos limites inferiores e laterais e 50 nos interiores
     for(i = 0; i < N-1; i++){
           
         w[i] = (float*) malloc(sizeof(float) * N);
@@ -39,7 +40,7 @@ void initialize_matrices(){
 
                 w[i][j] = 100;
                 
-            else  w[i][j] = 50; //valores iniciais dos pontos superiores  
+            else  w[i][j] = 50; //valores iniciais dos pontos interiores 
         }
     }
 
@@ -52,7 +53,7 @@ void initialize_matrices(){
         
     }
     
-    printf("get fucked");
+    printf("get fucked\n");
 }
 
 void print_matrix(){
