@@ -18,29 +18,29 @@ void initialize_matrices(){
     
     w = (float**) malloc(sizeof(float*) * N);
     u = (float**) malloc(sizeof(float*) * N);
-
+   
     //inicializar a matriz u a zero
-    for(int i=0;i<N;i++){
-        for(int j=0;j<N;j++){
+    for(i=0;i<N;i++){
+        for(j=0;j<N;j++){
             u[i][j]=0;
             printf("%f",u[i][j]);
         }
         
     }
-    
+     
     // Preencher a matriz com 100 nos limites superior e laterais e 50 nos interiores
-        for(i = 0; i < N-1; i++){
+    for(i = 0; i < N-1; i++){
           
-            w[i] = (float*) malloc(sizeof(float) * N);
+        w[i] = (float*) malloc(sizeof(float) * N);
 
-            for(j = 0; j < N; j++){ 
+        for(j = 0; j < N; j++){ 
             
-                if(i == 0 || j == 0 || j == N-1) //fronteiras inferiores e laterais
+            if(i == 0 || j == 0 || j == N-1) //fronteiras inferiores e laterais
 
-                    w[i][j] = 100;
+                w[i][j] = 100;
                 
-                 else  w[i][j] = 50; //valores iniciais dos pontos superiores  
-           }
+            else  w[i][j] = 50; //valores iniciais dos pontos superiores  
+        }
     }
 
     w[i] = (float*) malloc(sizeof(float) * N);
@@ -49,13 +49,15 @@ void initialize_matrices(){
     for(j = 0; j < N; j++){ 
       
         w[i][j] = 0;
+        
     }
     
+    printf("get fucked");
 }
 
 void print_matrix(){
     int i, j;
-
+    printf("olaasdadsa1212121412");
     // Dar print da matriz w
     for(i = 0; i < N; i++){
         for(j = 0; j < N; j++){
@@ -127,6 +129,7 @@ int main(int argc, char* argv[]){
     // Preparar as matrizes para aplicar o algoritmo
     initialize_matrices();
     
+    print_matrix();
     // parâmetro de relaxamento
     p=2/(1+sin(M_PI/(N-1)));
 
