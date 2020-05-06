@@ -57,7 +57,7 @@ void initialize_matrices(){
 
 void print_matrix(){
     int i, j;
-    printf("olaasdadsa1212121412");
+   
     // Dar print da matriz w
     for(i = 0; i < N; i++){
         for(j = 0; j < N; j++){
@@ -115,6 +115,16 @@ float maximum(float** vetor, int N){
     return max;
 }
 
+void iguala(float **a, float**b,int N){
+    int i,j;
+
+    for(i =0;i<N;i++){
+        for(j=0;j<N;j++){
+            a[i][j] = b[i][j];
+        }
+    }
+
+}
 int main(int argc, char* argv[]){
 
     if(argc != 2){
@@ -142,9 +152,9 @@ int main(int argc, char* argv[]){
     iter = 0;    
     
     while(diff > tol){
+        iguala(u,w,N);
         
-        u=w ;
-      printf("olaaa");
+        printf("olaaa");
         // 
         for(i = 1; i < N-1; i++){
             for(j= 1+ (i%2); j < N-1; j+=2){
