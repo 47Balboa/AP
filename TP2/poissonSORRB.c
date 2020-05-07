@@ -3,63 +3,46 @@
 #include <stdlib.h>
 #include <math.h>
 
+//#define M_PI 3.14159265358979323846264338327950288
 
-//#define M_PI 3.14159265358979323846264338327950288 
-
-float** w;
-float** u;
+double** w;
+double** u;
 
 //número de pontos da grelha
 int N;
 
 void initialize_matrices(){
-    
     int i, j;
-    
-    w = (float**) malloc(sizeof(float*) * N);
-    u = (float**) malloc(sizeof(float*) * N);
-   
-    //inicializar a matriz u a zero
-    for(i=0;i<N;i++){
-        u[i] = (float*) malloc(sizeof(float) * N);
-        for(j=0;j<N;j++){
-            u[i][j]=0;
-            printf("%f",u[i][j]);
-        }
-        
-    }
-     
+
+    u = (double**) malloc(sizeof(double*) * N);
+    w = (double**) malloc(sizeof(double*) * N);
+
     // Preencher a matriz com 100 nos limites inferiores e laterais e 50 nos interiores
-    for(i = 0; i < N-1; i++){
-          
-        w[i] = (float*) malloc(sizeof(float) * N);
+    for(i = 0; i < N; i++){
 
-        for(j = 0; j < N; j++){ 
-            
-            if(i == 0 || j == 0 || j == N-1) //fronteiras inferiores e laterais
+        u[i] = (double*) malloc(sizeof(double) * N);
+        w[i] = (double*) malloc(sizeof(double) * N);
 
-                w[i][j] = 100;
-                
-            else  w[i][j] = 50; //valores iniciais dos pontos interiores 
+        for(j = 0; j < N; j++){
+
+            u[i][j] = 0; //inicializar a matriz u a zero
+
+            if(i == N-1)
+                w[i][j] = 0; // fronteira de cima preenchida a 0;
+
+            else if(i == 0 || j == 0 || j == N-1)
+                w[i][j] = 100; //fronteiras inferiores e laterais
+
+            else
+                w[i][j] = 50; //valores iniciais dos pontos interiores 
         }
     }
-
-    w[i] = (float*) malloc(sizeof(float) * N);
-    
-    // fronteira de cima preenchida a 0;
-    for(j = 0; j < N; j++){ 
-      
-        w[i][j] = 0;
-        
-    }
-    
-    printf("get fucked\n");
 }
 
+// Dar print da matriz w
 void print_matrix(){
     int i, j;
-   
-    // Dar print da matriz w
+
     for(i = 0; i < N; i++){
         for(j = 0; j < N; j++){
             printf("%f ", w[i][j]);
@@ -69,122 +52,101 @@ void print_matrix(){
 }
 
 void free_matrices(){
-
+    free(u);
     free(w);
 }
 
 //funcao que calcula a diferenca entre 2 vetores e guarda o resultado noutro vetor
-float** diferenca(float** a, float** b){
-    float** result = (float**)malloc(N* sizeof(float));
-   
-    for(int i=0;i<N;i++){
-        result[i] = (float*)malloc(N*sizeof(float*));
-    }
+double** diferenca(double** a, double** b){
+    double** result = (double**) malloc(N * sizeof(double));
+    int i, j;
 
-    for(int i= 0; i<N; i++){
-        for(int j=0;j<N; j++){
-            result[i][j] = 0;
-        }
-    }
-
-    for(int i=0; i<N; i++){
-        for(int j=0;j<N; j++){
+    for(i = 0; i < N; i++){
+        result[i] = (double*) malloc(N * sizeof(double*));
+        for(j = 0; j < N; j++){
             result[i][j] = a[i][j] - b[i][j];
         }
     }
+
     return result;
 }
 
 //funcao que retorna um vetor bi-dimensional com o valor absoluto de cada elemento
-float** absol(float** vetor){
-    for(int i;i<N; i++){
-        for(int j=0;j<N; j++){
+double** absol(double** vetor){
+    int i, j;
+
+    for(i = 0; i < N; i++){
+        for(j = 0; j < N; j++){
             vetor[i][j] = fabs(vetor[i][j]);
         }
     }
+
     return vetor;
 }
 
 //funcao que retorna o maior elemento de um vetor
-float maximum(float** vetor){
-    float max = 0;
-    for(int i=0;i<N;i++){
-        for(int j=0;j<N;j++){
-            if(vetor[i][j]>max) max= vetor[i][j];
+double maximum(double** vetor){
+    double max = 0;
+    int i, j;
+
+    for(i = 0; i < N; i++){
+        for(j = 0; j < N; j++){
+            if(vetor[i][j] > max)
+                max = vetor[i][j];
         }
     }
+
     return max;
 }
 
-void iguala(float **a, float**b){
-    int i,j;
+void iguala(double **a, double**b){
+    int i, j;
 
-    for(i =0;i<N;i++){
-        for(j=0;j<N;j++){
+    for(i = 0; i < N; i++){
+        for(j = 0; j < N; j++){
             a[i][j] = b[i][j];
         }
     }
-
 }
+
 int main(int argc, char* argv[]){
 
     if(argc != 2){
-        
         printf ("Usage : ./ poissonSORRB <nr pontos da grelha>\n");
-        
     }
 
     N = atoi(argv[1]);
     
-   // printf("N: %d", N);
-
     int i, j;
 
-   
     // Preparar as matrizes para aplicar o algoritmo
     initialize_matrices();
-    
+
     print_matrix();
+
     // parâmetro de relaxamento
-    float p=2/(1+sin(M_PI/(N-1)));
-
-   // printf("p: %f", p);
-
+    double p = 2/(1 + sin(M_PI/(N-1)));
     
-    float tol = 1/ (float)(N*N);
-    //printf("TOL: %f", tol);
-
-
-    float diff = (tol + 1);
-    //printf("DIFF: %f", diff);
-
-    printf("sou linda\n");
+    double tol = 1/(double)(N*N);
+    
+    double diff = (tol + 1);
 
     printf("N: %d,P: %f, TOL: %f, DIFF: %f\n", N,p,tol, diff);
-
-    printf("porque\n");
-
-     printf("looooooool\n");
-   
-   int iter = 0;
-
-   printf("Número de Iterações: %d\n", iter);
     
+    int iter = 0;
+
     while(diff > tol){
-        printf("olaaa");
         iguala(u,w);
-        
-       
+
         for(i = 1; i < N-1; i++){
-            for(j= 1+ (i%2); j < N-1; j+=2){
-                w[i][j]=(1-p)* w[i][j]+p*(w[i-1][j]+w[i][j-1]+w[i][j+1]+w[i+1][j])/4;
+            for(j = 1 + (i%2); j < N-1; j += 2){
+                w[i][j] = (1-p) * w[i][j] + p * (w[i-1][j] + w[i][j-1] + w[i][j+1] + w[i+1][j])/4;
             }
         }
 
         for(i = 1; i < N-1; i++){
-            
-            for(j= 1+((i+1)%2); j < N-1; j+=2){
-                 w[i][j]=(1-p)* w[i][j]+p*(w[i-1][j]+w[i][j-1]+w[i][j+1]+w[i+1][j])/4;
+            for(j = 1 + ((i+1)%2); j < N-1; j += 2){
+                w[i][j] = (1-p) * w[i][j] + p * (w[i-1][j] + w[i][j-1] + w[i][j+1] + w[i+1][j])/4;
             }
         }
 
@@ -194,11 +156,13 @@ int main(int argc, char* argv[]){
         // Buscar ,em valor absoluto, o máximo da diferença das componentes em 2 iterações sucessivas
         //Em matlab o 1ºmax retorna um vetor linha com os maximos de cada linha da "matrix" e o segundo max retorna o valor maximo desse vetor
         //diff=max(max(abs(w-u)));
-        diff=maximum(absol(diferenca(w,u)));
+        diff = maximum(absol(diferenca(w,u)));
     }
 
     printf("Número de Iterações: %d\n", iter);
 
     // Free das matrizes
     free_matrices();
+
+    return 0;
 }
