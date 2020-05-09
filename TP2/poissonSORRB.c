@@ -2,14 +2,46 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <math.h>
+#include <sys/time.h>
+#include <omp.h>
 
-//#define M_PI 3.14159265358979323846264338327950288
+#define TIME_RES 1000000
+#define OMP_NUM_THREADS 16
 
 double** w;
 double** u;
+double initial_time;
+double clear_cache [30000000];
+int iter;
+double p;
+double tol;
+double diff;
+
 
 //número de pontos da grelha
 int N;
+
+void clearCache (){
+
+   int i;
+   for(i=0; i<30000000;i++)
+    clear_cache[i]=i;
+}
+
+void start(){
+
+  double time= omp_get_wtime();
+  initial_time= time* TIME_RES;
+
+}
+
+double stop(){
+
+   double time = omp_get_wtime();
+   double final = time * TIME_RES;
+
+   return final - initial_time;
+}
 
 void initialize_matrices(){
     int i, j;
@@ -18,29 +50,37 @@ void initialize_matrices(){
     w = (double**) malloc(sizeof(double*) * N);
 
     // Preencher a matriz com 100 nos limites inferiores e laterais e 50 nos interiores
-    for(i = 0; i < N; i++){
-
-        u[i] = (double*) malloc(sizeof(double) * N);
+  for(i = 0; i < N; i++){
+          
         w[i] = (double*) malloc(sizeof(double) * N);
+        u[i] = (double*) malloc(sizeof(double) * N);
 
-        for(j = 0; j < N; j++){
+        for(j = 0; j < N; j++){ 
 
-            u[i][j] = 0; //inicializar a matriz u a zero
+            u[i][j]=0; //Inicializar a matriz u a zeros
+            
+            if(i == N-1 || (j == 0 && i!=0) || (j == N-1 && i != 0)){ //fronteiras inferiores e laterais
 
-            if(i == N-1)
-                w[i][j] = 0; // fronteira de cima preenchida a 0;
+                w[i][j] = 100;
+                
+            }else{
 
-            else if(i == 0 || j == 0 || j == N-1)
-                w[i][j] = 100; //fronteiras inferiores e laterais
+                if(i ==0){
+                    w[i][j] = 0; //valores do limite superior
+                }else {
 
-            else
-                w[i][j] = 50; //valores iniciais dos pontos interiores 
+                    w[i][j] = 50; //valores iniciais dos pontos interiores 
+                }
+            
+            }
         }
+
     }
 }
 
 // Dar print da matriz w
 void print_matrix(){
+
     int i, j;
 
     for(i = 0; i < N; i++){
@@ -58,6 +98,7 @@ void free_matrices(){
 
 //funcao que calcula a diferenca entre 2 vetores e guarda o resultado noutro vetor
 double** diferenca(double** a, double** b){
+
     double** result = (double**) malloc(N * sizeof(double));
     int i, j;
 
@@ -73,6 +114,7 @@ double** diferenca(double** a, double** b){
 
 //funcao que retorna um vetor bi-dimensional com o valor absoluto de cada elemento
 double** absol(double** vetor){
+
     int i, j;
 
     for(i = 0; i < N; i++){
@@ -86,6 +128,7 @@ double** absol(double** vetor){
 
 //funcao que retorna o maior elemento de um vetor
 double maximum(double** vetor){
+
     double max = 0;
     int i, j;
 
@@ -100,6 +143,7 @@ double maximum(double** vetor){
 }
 
 void iguala(double **a, double**b){
+
     int i, j;
 
     for(i = 0; i < N; i++){
@@ -109,33 +153,12 @@ void iguala(double **a, double**b){
     }
 }
 
-int main(int argc, char* argv[]){
 
-    if(argc != 2){
-        printf ("Usage : ./ poissonSORRB <nr pontos da grelha>\n");
-    }
+void sequencial(){
 
-    N = atoi(argv[1]);
-    
-    int i, j;
+        int i,j;
 
-    // Preparar as matrizes para aplicar o algoritmo
-    initialize_matrices();
-
-    print_matrix();
-
-    // parâmetro de relaxamento
-    double p = 2/(1 + sin(M_PI/(N-1)));
-    
-    double tol = 1/(double)(N*N);
-    
-    double diff = (tol + 1);
-
-    printf("N: %d,P: %f, TOL: %f, DIFF: %f\n", N,p,tol, diff);
-    
-    int iter = 0;
-
-    while(diff > tol){
+       while(diff > tol){
         iguala(u,w);
 
         for(i = 1; i < N-1; i++){
@@ -158,10 +181,90 @@ int main(int argc, char* argv[]){
         //diff=max(max(abs(w-u)));
         diff = maximum(absol(diferenca(w,u)));
     }
+}
 
-    printf("Número de Iterações: %d\n", iter);
+void parallel(){
 
-    // Free das matrizes
+    int i,j;
+
+    #pragma omp parallel num_threads(OMP_NUM_THREADS)
+    while(diff > tol){
+        iguala(u,w);
+
+        #pragma omp for
+        for(i = 1; i < N-1; i++){
+            for(j = 1 + (i%2); j < N-1; j += 2){
+
+                #pragma omp atomic write
+                w[i][j] = (1-p) * w[i][j] + p * (w[i-1][j] + w[i][j-1] + w[i][j+1] + w[i+1][j])/4;
+                
+            }
+        }
+
+        #pragma omp for
+        for(i = 1; i < N-1; i++){
+            for(j = 1 + ((i+1)%2); j < N-1; j += 2){
+
+                #pragma omp atomic write
+                w[i][j] = (1-p) * w[i][j] + p * (w[i-1][j] + w[i][j-1] + w[i][j+1] + w[i+1][j])/4;
+                
+            }
+        }
+
+        iter++;
+
+        diff = maximum(absol(diferenca(w,u)));
+    }
+}
+
+int main(int argc, char* argv[]){
+
+    if(argc != 2){
+        printf ("Usage : ./ poissonSORRB <nr pontos da grelha>\n");
+    }
+
+    N = atoi(argv[1]);
+    
+    int i, j;
+
+    clearCache();
+
+    // Preparar as matrizes para aplicar o algoritmo
+    initialize_matrices();
+
+    //print_matrix();
+
+    // parâmetro de relaxamento
+    p = 2/(1 + sin(M_PI/(N-1)));
+    
+    tol = 1/(double)(N*N);
+    
+    diff = (tol + 1);
+
+    printf("N: %d,P: %f, TOL: %f, DIFF: %f\n", N,p,tol, diff);
+    
+    iter = 0;
+
+    start();
+
+    sequencial();
+
+    double tempo = stop();
+    printf(" Sequencial demorou %f  milisegundos\n  ",tempo);
+
+    printf("Número de Iterações sequencial: %d\n", iter);
+
+    clearCache();
+
+    start();
+
+    parallel();
+
+    double tempoo = stop();
+    printf(" Parallel demorou %f  milisegundos\n  ",tempoo);
+
+    printf("Número de Iterações parallel: %d\n", iter);
+
     free_matrices();
 
     return 0;
