@@ -6,7 +6,7 @@
 #include <omp.h>
 
 #define TIME_RES 1000000
-//#define OMP_NUM_THREADS 16
+#define OMP_NUM_THREADS 32
 
 double** w;
 double** w2;
@@ -205,34 +205,38 @@ void sequencial(){
 void parallel(){
 
     int i,j;
+    
 
-    #pragma omp parallel for
-    for(diff= tol+1; diff>tol; diff = maximum(absol(diferenca(w2,u)))){
-        iguala(u,w2);
+    #pragma omp parallel private(i,j) num_threads(OMP_NUM_THREADS)
+    while(diff > tol){
+        iguala(u,w);
 
-        //#pragma omp for
+        #pragma omp for 
         for(i = 1; i < N-1; i++){
+            
             for(j = 1 + (i%2); j < N-1; j += 2){
 
-                //#pragma omp atomic write
-                w2[i][j] = (1-p) * w2[i][j] + p * (w2[i-1][j] + w2[i][j-1] + w2[i][j+1] + w2[i+1][j])/4;
+                #pragma omp atomic write
+                w[i][j] = (1-p) * w[i][j] + p * (w[i-1][j] + w[i][j-1] + w[i][j+1] + w[i+1][j])/4;
                 
             }
         }
-
-       // #pragma omp for
+         
+        #pragma omp for
         for(i = 1; i < N-1; i++){
+            
             for(j = 1 + ((i+1)%2); j < N-1; j += 2){
 
-                //#pragma omp atomic write
-                w2[i][j] = (1-p) * w2[i][j] + p * (w2[i-1][j] + w2[i][j-1] + w2[i][j+1] + w2[i+1][j])/4;
+                #pragma omp atomic write
+                w[i][j] = (1-p) * w[i][j] + p * (w[i-1][j] + w[i][j-1] + w[i][j+1] + w[i+1][j])/4;
                 
             }
         }
+        
 
         iter++;
 
-        
+        diff = maximum(absol(diferenca(w,u)));
     }
 }
 
@@ -278,6 +282,8 @@ int main(int argc, char* argv[]){
     iter = 0;
     diff = (tol + 1);
 
+    printf("N: %d,P: %f, TOL: %f, DIFF: %f\n", N,p,tol, diff);
+
     start();
 
     parallel();
@@ -286,7 +292,7 @@ int main(int argc, char* argv[]){
     printf(" Parallel demorou %f  milisegundos\n  ",tempoo);
 
     printf("Número de Iterações parallel: %d\n", iter);
-    print_matrix();
+    //print_matrix();
 
     free_matrices();
 
