@@ -6,9 +6,10 @@
 #include <omp.h>
 
 #define TIME_RES 1000000
-#define OMP_NUM_THREADS 16
+//#define OMP_NUM_THREADS 16
 
 double** w;
+double** w2;
 double** u;
 double initial_time;
 double clear_cache [30000000];
@@ -48,17 +49,19 @@ void initialize_matrices(){
 
     u = (double**) malloc(sizeof(double*) * N);
     w = (double**) malloc(sizeof(double*) * N);
+    w2 = (double**) malloc(sizeof(double*) * N);
 
     // Preencher a matriz com 100 nos limites inferiores e laterais e 50 nos interiores
   for(i = 0; i < N; i++){
           
         w[i] = (double*) malloc(sizeof(double) * N);
+        w2[i] = (double*) malloc(sizeof(double) * N);
         u[i] = (double*) malloc(sizeof(double) * N);
 
         for(j = 0; j < N; j++){ 
 
             u[i][j]=0; //Inicializar a matriz u a zeros
-            
+            w2[i][j] = 0;
             if(i == N-1 || (j == 0 && i!=0) || (j == N-1 && i != 0)){ //fronteiras inferiores e laterais
 
                 w[i][j] = 100;
@@ -86,6 +89,7 @@ void print_matrix(){
     for(i = 0; i < N; i++){
         for(j = 0; j < N; j++){
             printf("%f ", w[i][j]);
+            printf("%f ", w2[i][j]);
         }
         printf("\n");
     }
@@ -153,6 +157,21 @@ void iguala(double **a, double**b){
     }
 }
 
+void compare() {
+        int i,j;
+        int v = 1;
+        for(i = 0;i < N; i++) {
+            for(j = 0;j < N; j++){
+                //printf("RES: %d -> RESEQ: %d\n",w2[i],w[i]);
+                if(w2[i][j] != w[i][j]) {
+                        v = 0;
+                }
+            }
+        }
+        printf("DEU: %d\n",v);
+}
+
+
 
 void sequencial(){
 
@@ -187,33 +206,33 @@ void parallel(){
 
     int i,j;
 
-    #pragma omp parallel num_threads(OMP_NUM_THREADS)
-    while(diff > tol){
-        iguala(u,w);
+    #pragma omp parallel for
+    for(diff= tol+1; diff>tol; diff = maximum(absol(diferenca(w2,u)))){
+        iguala(u,w2);
 
-        #pragma omp for
+        //#pragma omp for
         for(i = 1; i < N-1; i++){
             for(j = 1 + (i%2); j < N-1; j += 2){
 
-                #pragma omp atomic write
-                w[i][j] = (1-p) * w[i][j] + p * (w[i-1][j] + w[i][j-1] + w[i][j+1] + w[i+1][j])/4;
+                //#pragma omp atomic write
+                w2[i][j] = (1-p) * w2[i][j] + p * (w2[i-1][j] + w2[i][j-1] + w2[i][j+1] + w2[i+1][j])/4;
                 
             }
         }
 
-        #pragma omp for
+       // #pragma omp for
         for(i = 1; i < N-1; i++){
             for(j = 1 + ((i+1)%2); j < N-1; j += 2){
 
-                #pragma omp atomic write
-                w[i][j] = (1-p) * w[i][j] + p * (w[i-1][j] + w[i][j-1] + w[i][j+1] + w[i+1][j])/4;
+                //#pragma omp atomic write
+                w2[i][j] = (1-p) * w2[i][j] + p * (w2[i-1][j] + w2[i][j-1] + w2[i][j+1] + w2[i+1][j])/4;
                 
             }
         }
 
         iter++;
 
-        diff = maximum(absol(diferenca(w,u)));
+        
     }
 }
 
@@ -231,7 +250,8 @@ int main(int argc, char* argv[]){
 
     // Preparar as matrizes para aplicar o algoritmo
     initialize_matrices();
-
+    iguala(w2,w);
+    compare();
     //print_matrix();
 
     // parâmetro de relaxamento
@@ -255,6 +275,8 @@ int main(int argc, char* argv[]){
     printf("Número de Iterações sequencial: %d\n", iter);
 
     clearCache();
+    iter = 0;
+    diff = (tol + 1);
 
     start();
 
@@ -264,6 +286,7 @@ int main(int argc, char* argv[]){
     printf(" Parallel demorou %f  milisegundos\n  ",tempoo);
 
     printf("Número de Iterações parallel: %d\n", iter);
+    print_matrix();
 
     free_matrices();
 
