@@ -9,7 +9,7 @@
 #define OMP_NUM_THREADS 32
 
 double** w;
-double** w2;
+//double** w2;
 double** u;
 double initial_time;
 double clear_cache [30000000];
@@ -49,19 +49,19 @@ void initialize_matrices(){
 
     u = (double**) malloc(sizeof(double*) * N);
     w = (double**) malloc(sizeof(double*) * N);
-    w2 = (double**) malloc(sizeof(double*) * N);
+    //w2 = (double**) malloc(sizeof(double*) * N);
 
     // Preencher a matriz com 100 nos limites inferiores e laterais e 50 nos interiores
   for(i = 0; i < N; i++){
           
         w[i] = (double*) malloc(sizeof(double) * N);
-        w2[i] = (double*) malloc(sizeof(double) * N);
+        //w2[i] = (double*) malloc(sizeof(double) * N);
         u[i] = (double*) malloc(sizeof(double) * N);
 
         for(j = 0; j < N; j++){ 
 
             u[i][j]=0; //Inicializar a matriz u a zeros
-            w2[i][j] = 0;
+            //w2[i][j] = 0;
             if(i == N-1 || (j == 0 && i!=0) || (j == N-1 && i != 0)){ //fronteiras inferiores e laterais
 
                 w[i][j] = 100;
@@ -89,7 +89,7 @@ void print_matrix(){
     for(i = 0; i < N; i++){
         for(j = 0; j < N; j++){
             printf("%f ", w[i][j]);
-            printf("%f ", w2[i][j]);
+           // printf("%f ", w2[i][j]);
         }
         printf("\n");
     }
@@ -157,6 +157,7 @@ void iguala(double **a, double**b){
     }
 }
 
+/*
 void compare() {
         int i,j;
         int v = 1;
@@ -171,7 +172,7 @@ void compare() {
         printf("DEU: %d\n",v);
 }
 
-
+*/
 
 void sequencial(){
 
@@ -254,8 +255,8 @@ int main(int argc, char* argv[]){
 
     // Preparar as matrizes para aplicar o algoritmo
     initialize_matrices();
-    iguala(w2,w);
-    compare();
+    
+    //compare();
     //print_matrix();
 
     // parâmetro de relaxamento
