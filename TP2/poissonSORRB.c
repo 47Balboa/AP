@@ -12,7 +12,7 @@ double** w;
 //double** w2;
 double** u;
 double initial_time;
-double clear_cache [30000000];
+double clearcache [30000000];
 int iter;
 double p;
 double tol;
@@ -26,7 +26,7 @@ void clearCache (){
 
    int i;
    for(i=0; i<30000000;i++)
-    clear_cache[i]=i;
+    clearcache[i]=i;
 }
 
 void start(){
@@ -129,6 +129,7 @@ double** absol(double** vetor){
 
     return vetor;
 }
+    
 
 //funcao que retorna o maior elemento de um vetor
 double maximum(double** vetor){
@@ -208,11 +209,12 @@ void parallel(){
     int i,j;
     
 
-    #pragma omp parallel private(i,j) num_threads(OMP_NUM_THREADS)
+    //#pragma omp parallel num_threads(OMP_NUM_THREADS)
     while(diff > tol){
         iguala(u,w);
 
-        #pragma omp for 
+        #pragma omp parallel for private(i,j) schedule(static) num_threads(OMP_NUM_THREADS)
+        #pragma omp collapse(2)
         for(i = 1; i < N-1; i++){
             
             for(j = 1 + (i%2); j < N-1; j += 2){
@@ -223,7 +225,8 @@ void parallel(){
             }
         }
          
-        #pragma omp for
+        #pragma omp parallel for private(i,j) schedule(static) num_threads(OMP_NUM_THREADS)
+        #pragma omp collapse(2)
         for(i = 1; i < N-1; i++){
             
             for(j = 1 + ((i+1)%2); j < N-1; j += 2){
@@ -257,7 +260,7 @@ int main(int argc, char* argv[]){
     initialize_matrices();
     
     //compare();
-    //print_matrix();
+  // print_matrix();
 
     // parâmetro de relaxamento
     p = 2/(1 + sin(M_PI/(N-1)));
@@ -266,7 +269,7 @@ int main(int argc, char* argv[]){
     
     diff = (tol + 1);
 
-    printf("N: %d,P: %f, TOL: %f, DIFF: %f\n", N,p,tol, diff);
+    printf("N: %d,P: %2f, TOL: %2f, DIFF: %2f\n", N,p,tol, diff);
     
     iter = 0;
 
@@ -275,25 +278,30 @@ int main(int argc, char* argv[]){
     sequencial();
 
     double tempo = stop();
-    printf(" Sequencial demorou %f  milisegundos\n  ",tempo);
+    printf(" Sequencial demorou %2f  milisegundos\n  ",tempo);
 
     printf("Número de Iterações sequencial: %d\n", iter);
+     print_matrix();
 
     clearCache();
+     
     iter = 0;
     diff = (tol + 1);
+    
+   initialize_matrices();
+   // print_matrix();
 
-    printf("N: %d,P: %f, TOL: %f, DIFF: %f\n", N,p,tol, diff);
+    printf("N: %d,P: %2f, TOL: %2f, DIFF: %2f\n", N,p,tol, diff);
 
     start();
 
     parallel();
 
     double tempoo = stop();
-    printf(" Parallel demorou %f  milisegundos\n  ",tempoo);
+    printf(" Parallel demorou %2f  milisegundos\n  ",tempoo);
 
     printf("Número de Iterações parallel: %d\n", iter);
-    //print_matrix();
+    print_matrix();
 
     free_matrices();
 
