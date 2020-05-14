@@ -5,8 +5,7 @@
 #include <sys/time.h>
 #include <omp.h>
 
-#define TIME_RES 1000000
-#define OMP_NUM_THREADS 32
+#define TIME_RES 1000
 
 double** w;
 //double** w2;
@@ -204,7 +203,7 @@ void sequencial(){
     }
 }
 
-void parallel(){
+void parallel(int threads){
 
     int i,j;
     
@@ -213,8 +212,8 @@ void parallel(){
     while(diff > tol){
         iguala(u,w);
 
-        #pragma omp parallel for private(i,j) schedule(static) num_threads(OMP_NUM_THREADS)
-        #pragma omp collapse(2)
+        #pragma omp parallel for private(i,j) schedule(static) num_threads(threads)
+        
         for(i = 1; i < N-1; i++){
             
             for(j = 1 + (i%2); j < N-1; j += 2){
@@ -225,8 +224,8 @@ void parallel(){
             }
         }
          
-        #pragma omp parallel for private(i,j) schedule(static) num_threads(OMP_NUM_THREADS)
-        #pragma omp collapse(2)
+        #pragma omp parallel for private(i,j) schedule(static) num_threads(threads)
+        
         for(i = 1; i < N-1; i++){
             
             for(j = 1 + ((i+1)%2); j < N-1; j += 2){
@@ -246,11 +245,16 @@ void parallel(){
 
 int main(int argc, char* argv[]){
 
-    if(argc != 2){
-        printf ("Usage : ./ poissonSORRB <nr pontos da grelha>\n");
+	
+
+    if(argc != 3){
+        printf ("Usage : ./ poissonSORRB <nr pontos da grelha> <numero threads>\n");
+        return 0;
     }
 
     N = atoi(argv[1]);
+
+    int threads = atoi(argv[2]);
     
     int i, j;
 
@@ -268,11 +272,10 @@ int main(int argc, char* argv[]){
     tol = 1/(double)(N*N);
     
     diff = (tol + 1);
-
-    printf("N: %d,P: %2f, TOL: %2f, DIFF: %2f\n", N,p,tol, diff);
-    
+   
     iter = 0;
 
+    /*
     start();
 
     sequencial();
@@ -281,27 +284,32 @@ int main(int argc, char* argv[]){
     printf(" Sequencial demorou %2f  milisegundos\n  ",tempo);
 
     printf("Número de Iterações sequencial: %d\n", iter);
-     print_matrix();
+    // print_matrix();
 
     clearCache();
+
+    initialize_matrices();
      
     iter = 0;
     diff = (tol + 1);
     
-   initialize_matrices();
+  // initialize_matrices();
    // print_matrix();
 
-    printf("N: %d,P: %2f, TOL: %2f, DIFF: %2f\n", N,p,tol, diff);
+    printf("N: %d,P: %2f, TOL: %2f, DIFF: %2f, Iter: %d\n", N,p,tol, diff,iter);
+    */
+
+    FILE* fp = fopen("results/resultados_poisson.csv","a");
 
     start();
 
-    parallel();
+    parallel(threads);
 
-    double tempoo = stop();
-    printf(" Parallel demorou %2f  milisegundos\n  ",tempoo);
+    double tempo = stop();
 
-    printf("Número de Iterações parallel: %d\n", iter);
-    print_matrix();
+    fprintf(fp,"%d,%d,%2f,%d,%2f\n", N, threads, tol, iter, tempo);
+    //print_matrix();
+    fclose(fp);
 
     free_matrices();
 
