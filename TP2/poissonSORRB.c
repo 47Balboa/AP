@@ -8,7 +8,6 @@
 #define TIME_RES 1000
 
 double** w;
-//double** w2;
 double** u;
 double initial_time;
 double clearcache [30000000];
@@ -16,7 +15,6 @@ int iter;
 double p;
 double tol;
 double diff;
-
 
 //número de pontos da grelha
 int N;
@@ -48,19 +46,17 @@ void initialize_matrices(){
 
     u = (double**) malloc(sizeof(double*) * N);
     w = (double**) malloc(sizeof(double*) * N);
-    //w2 = (double**) malloc(sizeof(double*) * N);
-
+    
     // Preencher a matriz com 100 nos limites inferiores e laterais e 50 nos interiores
   for(i = 0; i < N; i++){
           
         w[i] = (double*) malloc(sizeof(double) * N);
-        //w2[i] = (double*) malloc(sizeof(double) * N);
         u[i] = (double*) malloc(sizeof(double) * N);
 
         for(j = 0; j < N; j++){ 
 
             u[i][j]=0; //Inicializar a matriz u a zeros
-            //w2[i][j] = 0;
+           
             if(i == N-1 || (j == 0 && i!=0) || (j == N-1 && i != 0)){ //fronteiras inferiores e laterais
 
                 w[i][j] = 100;
@@ -76,7 +72,6 @@ void initialize_matrices(){
             
             }
         }
-
     }
 }
 
@@ -88,8 +83,7 @@ void print_matrix(){
     for(i = 0; i < N; i++){
         for(j = 0; j < N; j++){
             printf("%f ", w[i][j]);
-           // printf("%f ", w2[i][j]);
-        }
+       }
         printf("\n");
     }
 }
@@ -111,7 +105,6 @@ double** diferenca(double** a, double** b){
             result[i][j] = a[i][j] - b[i][j];
         }
     }
-
     return result;
 }
 
@@ -125,7 +118,6 @@ double** absol(double** vetor){
             vetor[i][j] = fabs(vetor[i][j]);
         }
     }
-
     return vetor;
 }
     
@@ -142,7 +134,6 @@ double maximum(double** vetor){
                 max = vetor[i][j];
         }
     }
-
     return max;
 }
 
@@ -157,58 +148,10 @@ void iguala(double **a, double**b){
     }
 }
 
-/*
-void compare() {
-        int i,j;
-        int v = 1;
-        for(i = 0;i < N; i++) {
-            for(j = 0;j < N; j++){
-                //printf("RES: %d -> RESEQ: %d\n",w2[i],w[i]);
-                if(w2[i][j] != w[i][j]) {
-                        v = 0;
-                }
-            }
-        }
-        printf("DEU: %d\n",v);
-}
-
-*/
-
-void sequencial(){
-
-        int i,j;
-
-       while(diff > tol){
-        iguala(u,w);
-
-        for(i = 1; i < N-1; i++){
-            for(j = 1 + (i%2); j < N-1; j += 2){
-                w[i][j] = (1-p) * w[i][j] + p * (w[i-1][j] + w[i][j-1] + w[i][j+1] + w[i+1][j])/4;
-            }
-        }
-
-        for(i = 1; i < N-1; i++){
-            for(j = 1 + ((i+1)%2); j < N-1; j += 2){
-                w[i][j] = (1-p) * w[i][j] + p * (w[i-1][j] + w[i][j-1] + w[i][j+1] + w[i+1][j])/4;
-            }
-        }
-
-        // Aumentar o número de iterações
-        iter++;
-
-        // Buscar ,em valor absoluto, o máximo da diferença das componentes em 2 iterações sucessivas
-        //Em matlab o 1ºmax retorna um vetor linha com os maximos de cada linha da "matrix" e o segundo max retorna o valor maximo desse vetor
-        //diff=max(max(abs(w-u)));
-        diff = maximum(absol(diferenca(w,u)));
-    }
-}
-
 void parallel(int threads){
 
     int i,j;
-    
-
-    //#pragma omp parallel num_threads(OMP_NUM_THREADS)
+	
     while(diff > tol){
         iguala(u,w);
 
@@ -231,22 +174,16 @@ void parallel(int threads){
             for(j = 1 + ((i+1)%2); j < N-1; j += 2){
 
                 #pragma omp atomic write
-                w[i][j] = (1-p) * w[i][j] + p * (w[i-1][j] + w[i][j-1] + w[i][j+1] + w[i+1][j])/4;
-                
+                w[i][j] = (1-p) * w[i][j] + p * (w[i-1][j] + w[i][j-1] + w[i][j+1] + w[i+1][j])/4;                
             }
         }
-        
-
         iter++;
-
         diff = maximum(absol(diferenca(w,u)));
     }
 }
 
 int main(int argc, char* argv[]){
-
 	
-
     if(argc != 3){
         printf ("Usage : ./ poissonSORRB <nr pontos da grelha> <numero threads>\n");
         return 0;
@@ -262,9 +199,8 @@ int main(int argc, char* argv[]){
 
     // Preparar as matrizes para aplicar o algoritmo
     initialize_matrices();
-    
-    //compare();
-  // print_matrix();
+   
+    // print_matrix();
 
     // parâmetro de relaxamento
     p = 2/(1 + sin(M_PI/(N-1)));
@@ -275,30 +211,6 @@ int main(int argc, char* argv[]){
    
     iter = 0;
 
-    /*
-    start();
-
-    sequencial();
-
-    double tempo = stop();
-    printf(" Sequencial demorou %2f  milisegundos\n  ",tempo);
-
-    printf("Número de Iterações sequencial: %d\n", iter);
-    // print_matrix();
-
-    clearCache();
-
-    initialize_matrices();
-     
-    iter = 0;
-    diff = (tol + 1);
-    
-  // initialize_matrices();
-   // print_matrix();
-
-    printf("N: %d,P: %2f, TOL: %2f, DIFF: %2f, Iter: %d\n", N,p,tol, diff,iter);
-    */
-
     FILE* fp = fopen("results/resultados_poisson.csv","a");
 
     start();
@@ -306,9 +218,11 @@ int main(int argc, char* argv[]){
     parallel(threads);
 
     double tempo = stop();
+    
+    //print_matrix();
 
     fprintf(fp,"%d,%d,%2f,%d,%2f\n", N, threads, tol, iter, tempo);
-    //print_matrix();
+    
     fclose(fp);
 
     free_matrices();
