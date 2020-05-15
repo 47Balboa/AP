@@ -211,7 +211,7 @@ int main(int argc, char* argv[]){
    
     iter = 0;
 
-    FILE* fp = fopen("results/resultados_poisson.csv","a");
+    FILE* fp = fopen("results/resultados.csv","a");
 
     start();
 
