@@ -14,14 +14,14 @@ make
 
 cd ./results/
 
-echo "\nGrid_Points,Number_of_Threads,Tolerance,Iteration,Execution_Time">> resultados_poisson.csv
+echo "\nPontos da Grelha,Número de Threads,Tolerância,Iterações,Tempo de execução">> resultados.csv
 
 cd ..
 
-# i -> Nº Grid Points
-# j -> Nº Threads
-# z -> Tolerance
-for i in 100 500 1000 2000 5000; do
+# i : pontos
+# j : Threads
+
+for i in 64 128 256 512 1024; do
 	echo "Para N:"
 	for j in 1 4 8 16 24 32; do
 		echo "Para Threads:"
